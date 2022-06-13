@@ -11,6 +11,7 @@ import (
 type CategoryRepositoryImpl struct {
 }
 
+// contructor, tidak ada dependecy
 func NewCategoryRepository() CategoryRepository {
 	return &CategoryRepositoryImpl{}
 }

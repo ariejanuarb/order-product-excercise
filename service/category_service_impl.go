@@ -17,6 +17,8 @@ type CategoryServiceImpl struct {
 	Validate           *validator.Validate
 }
 
+// constructor
+// dependency : repository, db, validator
 func NewCategoryService(categoryRepository repository.CategoryRepository, DB *sql.DB, validate *validator.Validate) CategoryService {
 	return &CategoryServiceImpl{
 		CategoryRepository: categoryRepository,

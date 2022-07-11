@@ -13,8 +13,8 @@ type CategoryControllerImpl struct {
 	CategoryService service.CategoryService
 }
 
-// contructor new category controller
-// dependency : category service
+// contructor new categories controller
+// dependency : categories service
 func NewCategoryController(categoryService service.CategoryService) CategoryController {
 	return &CategoryControllerImpl{
 		CategoryService: categoryService,

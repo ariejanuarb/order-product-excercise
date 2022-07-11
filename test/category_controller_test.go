@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
-	"golang-rest-api/app"
 	"golang-rest-api/controller"
+	"golang-rest-api/exception"
 	"golang-rest-api/helper"
 	"golang-rest-api/middleware"
 	"golang-rest-api/model/domain"
@@ -24,8 +25,8 @@ import (
 	"time"
 )
 
-func setupTestDB() *sql.DB {
-	db, err := sql.Open("mysql", "root@tcp(localhost:3306)/belajar_golang_restful_api_test")
+func SetupTestDB() *sql.DB {
+	db, err := sql.Open("mysql", "root:P@ssW0rd32!@tcp(localhost:3306)/belajar_go")
 	helper.PanicIfError(err)
 
 	db.SetMaxIdleConns(5)
@@ -36,24 +37,31 @@ func setupTestDB() *sql.DB {
 	return db
 }
 
-func setupRouter(db *sql.DB) http.Handler {
+func SetupRouter(db *sql.DB) http.Handler {
 	validate := validator.New()
 	categoryRepository := repository.NewCategoryRepository()
 	categoryService := service.NewCategoryService(categoryRepository, db, validate)
 	categoryController := controller.NewCategoryController(categoryService)
-	router := app.NewRouter(categoryController)
+	router := httprouter.New()
+	router.GET("/api/categories", categoryController.FindAll)
+	router.GET("/api/categories/:categoryId", categoryController.FindById)
+	router.POST("/api/categories", categoryController.Create)
+	router.PUT("/api/categories/:categoryId", categoryController.Update)
+	router.DELETE("/api/categories/:categoryId", categoryController.Delete)
+
+	router.PanicHandler = exception.ErrorHandler
 
 	return middleware.NewAuthMiddleware(router)
 }
 
-func truncateCategory(db *sql.DB) {
-	db.Exec("TRUNCATE category")
+func TruncateCategory(db *sql.DB) {
+	db.Exec("TRUNCATE categories")
 }
 
 func TestCreateCategorySuccess(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
-	router := setupRouter(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
+	router := SetupRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : "Gadget"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/categories", requestBody)
@@ -77,9 +85,9 @@ func TestCreateCategorySuccess(t *testing.T) {
 }
 
 func TestCreateCategoryFailed(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
-	router := setupRouter(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
+	router := SetupRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : ""}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/categories", requestBody)
@@ -102,8 +110,8 @@ func TestCreateCategoryFailed(t *testing.T) {
 }
 
 func TestUpdateCategorySuccess(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
 
 	tx, _ := db.Begin()
 	categoryRepository := repository.NewCategoryRepository()
@@ -112,7 +120,7 @@ func TestUpdateCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := SetupRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : "Gadget"}`)
 	request := httptest.NewRequest(http.MethodPut, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), requestBody)
@@ -137,8 +145,8 @@ func TestUpdateCategorySuccess(t *testing.T) {
 }
 
 func TestUpdateCategoryFailed(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
 
 	tx, _ := db.Begin()
 	categoryRepository := repository.NewCategoryRepository()
@@ -147,7 +155,7 @@ func TestUpdateCategoryFailed(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := SetupRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : ""}`)
 	request := httptest.NewRequest(http.MethodPut, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), requestBody)
@@ -170,8 +178,8 @@ func TestUpdateCategoryFailed(t *testing.T) {
 }
 
 func TestGetCategorySuccess(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
 
 	tx, _ := db.Begin()
 	categoryRepository := repository.NewCategoryRepository()
@@ -180,7 +188,7 @@ func TestGetCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), nil)
 	request.Header.Add("X-API-Key", "RAHASIA")
@@ -203,9 +211,9 @@ func TestGetCategorySuccess(t *testing.T) {
 }
 
 func TestGetCategoryFailed(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
-	router := setupRouter(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories/404", nil)
 	request.Header.Add("X-API-Key", "RAHASIA")
@@ -226,8 +234,8 @@ func TestGetCategoryFailed(t *testing.T) {
 }
 
 func TestDeleteCategorySuccess(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
 
 	tx, _ := db.Begin()
 	categoryRepository := repository.NewCategoryRepository()
@@ -236,7 +244,7 @@ func TestDeleteCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodDelete, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), nil)
 	request.Header.Add("Content-Type", "application/json")
@@ -258,9 +266,9 @@ func TestDeleteCategorySuccess(t *testing.T) {
 }
 
 func TestDeleteCategoryFailed(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
-	router := setupRouter(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodDelete, "http://localhost:3000/api/categories/404", nil)
 	request.Header.Add("Content-Type", "application/json")
@@ -282,8 +290,8 @@ func TestDeleteCategoryFailed(t *testing.T) {
 }
 
 func TestListCategoriesSuccess(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
 
 	tx, _ := db.Begin()
 	categoryRepository := repository.NewCategoryRepository()
@@ -295,7 +303,7 @@ func TestListCategoriesSuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories", nil)
 	request.Header.Add("X-API-Key", "RAHASIA")
@@ -329,9 +337,9 @@ func TestListCategoriesSuccess(t *testing.T) {
 }
 
 func TestUnauthorized(t *testing.T) {
-	db := setupTestDB()
-	truncateCategory(db)
-	router := setupRouter(db)
+	db := SetupTestDB()
+	TruncateCategory(db)
+	router := SetupRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories", nil)
 	request.Header.Add("X-API-Key", "SALAH")

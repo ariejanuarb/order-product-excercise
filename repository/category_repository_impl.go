@@ -17,7 +17,7 @@ func NewCategoryRepository() CategoryRepository {
 }
 
 func (c CategoryRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, category domain.Category) domain.Category {
-	SQL := "insert into category(name) values (?)"
+	SQL := "insert into categories(name) values (?)"
 	result, err := tx.ExecContext(ctx, SQL, category.Name)
 	helper.PanicIfError(err)
 
@@ -29,7 +29,7 @@ func (c CategoryRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, category d
 }
 
 func (c CategoryRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, category domain.Category) domain.Category {
-	SQL := "update category set name = ? where id = ?"
+	SQL := "update categories set name = ? where id = ?"
 	_, err := tx.ExecContext(ctx, SQL, category.Name, category.Id)
 	helper.PanicIfError(err)
 
@@ -37,13 +37,13 @@ func (c CategoryRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, category
 }
 
 func (c CategoryRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, category domain.Category) {
-	SQL := "delete from category where id = ?"
+	SQL := "delete from categories where id = ?"
 	_, err := tx.ExecContext(ctx, SQL, category.Id)
 	helper.PanicIfError(err)
 }
 
 func (c CategoryRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, categoryId int) (domain.Category, error) {
-	SQL := "select id, name from category where id = ?"
+	SQL := "select id, name from categories where id = ?"
 	rows, err := tx.QueryContext(ctx, SQL, categoryId)
 	helper.PanicIfError(err)
 	defer rows.Close()
@@ -54,12 +54,12 @@ func (c CategoryRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, catego
 		helper.PanicIfError(err)
 		return category, nil
 	} else {
-		return category, errors.New("category is not found")
+		return category, errors.New("categories is not found")
 	}
 }
 
 func (c CategoryRepositoryImpl) FindByAll(ctx context.Context, tx *sql.Tx) []domain.Category {
-	SQL := "select id, name from category"
+	SQL := "select id, name from categories"
 	rows, err := tx.QueryContext(ctx, SQL)
 	helper.PanicIfError(err)
 	defer rows.Close()

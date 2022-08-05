@@ -13,14 +13,14 @@ import (
 
 type OrdersServiceImpl struct {
 	OrdersRepository        repository.OrdersRepository
-	OrdersProductRepository repository.OrdersProductRepository
+	OrdersProductRepository repository.OrderProductRepository
 	DB                      *sql.DB
 	Validate                *validator.Validate
 }
 
 // constructor
 // dependency : repository, db, validator
-func NewOrdersService(OrdersRepository repository.OrdersRepository, OrdersProductRepository repository.OrdersProductRepository, DB *sql.DB, validate *validator.Validate) OrdersService {
+func NewOrdersService(OrdersRepository repository.OrdersRepository, OrdersProductRepository repository.OrderProductRepository, DB *sql.DB, validate *validator.Validate) OrdersService {
 	return &OrdersServiceImpl{
 		OrdersRepository:        OrdersRepository,
 		OrdersProductRepository: OrdersProductRepository,
@@ -29,7 +29,7 @@ func NewOrdersService(OrdersRepository repository.OrdersRepository, OrdersProduc
 	}
 }
 
-func (service *OrdersServiceImpl) Create(ctx context.Context, request web.OrdersCreateRequest) web.OrdersResponse {
+func (service *OrdersServiceImpl) Create(ctx context.Context, request web.OrderCreateRequest) web.OrdersResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
@@ -38,8 +38,8 @@ func (service *OrdersServiceImpl) Create(ctx context.Context, request web.Orders
 	defer helper.CommitOrRollback(tx)
 
 	orders := domain.Orders{
-		CustomerId: request.CustomerId,
-		InvoiceNo:  request.InvoiceNumber,
+		CustomerId:    request.CustomerId,
+		InvoiceNumber: request.InvoiceNumber,
 	}
 
 	// header
@@ -47,7 +47,7 @@ func (service *OrdersServiceImpl) Create(ctx context.Context, request web.Orders
 
 	// loopping
 	for _, detail := range request.Details {
-		op := domain.OrdersProduct{
+		op := domain.OrderProduct{
 			ProductId: detail.ProductId,
 			Price:     detail.Price,
 			Qty:       detail.Qty,

@@ -5,6 +5,6 @@ type OrdersProduct struct {
 	OrderId   int
 	ProductId int
 	Qty       int
-	Price     int
-	Amount    int
+	Price     float64
+	Amount    float64
 }
